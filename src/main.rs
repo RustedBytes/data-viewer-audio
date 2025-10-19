@@ -54,7 +54,8 @@ fn extract_parquet(path: &Path) -> PolarsResult<DataFrame> {
     let file = File::open(path)?;
     let reader = BufReader::new(file);
 
-    ParquetReader::new(reader)
+    let reader_pq = ParquetReader::new(reader);
+    reader_pq
         .finish()?
         // Unnest the 'audio' struct column. This creates new columns.
         .unnest(["audio"])
@@ -71,6 +72,187 @@ fn extract_parquet(path: &Path) -> PolarsResult<DataFrame> {
             df.rename("path", "audio_path".into()).unwrap();
             df
         })
+}
+
+/// A simple text-based histogram for f64 values, rendered as a string using ASCII bars.
+struct Histogram {
+    bins: Vec<(f64, f64, usize)>, // (start, end, count)
+    max_count: usize,
+    bar_width: usize,
+    bar_char: char,
+}
+
+impl Histogram {
+    fn new(values: &[f64], num_bins: usize, bar_width: usize, bar_char: char) -> Self {
+        assert!(
+            !values.is_empty(),
+            "Cannot create histogram from empty data"
+        );
+        assert!(num_bins > 0, "Number of bins must be greater than 0");
+
+        let min = *values
+            .iter()
+            .min_by(|a, b| a.partial_cmp(b).unwrap())
+            .unwrap();
+        let max = *values
+            .iter()
+            .max_by(|a, b| a.partial_cmp(b).unwrap())
+            .unwrap();
+
+        let bin_width = if max == min {
+            1.0
+        } else {
+            (max - min) / num_bins as f64
+        };
+
+        let mut bin_counts = vec![0usize; num_bins];
+        for &value in values {
+            if value < min || value > max {
+                continue; // Skip outliers if any, though unlikely
+            }
+            let bin_idx = ((value - min) / bin_width).min((num_bins - 1) as f64) as usize;
+            bin_counts[bin_idx] += 1;
+        }
+
+        let max_count = *bin_counts.iter().max().unwrap_or(&0);
+
+        let mut bins = Vec::new();
+        for (i, &count) in bin_counts.iter().enumerate() {
+            let start = min + (i as f64 * bin_width);
+            let end = if i == num_bins - 1 {
+                max
+            } else {
+                start + bin_width
+            };
+            bins.push((start, end, count));
+        }
+
+        Self {
+            bins,
+            max_count,
+            bar_width,
+            bar_char,
+        }
+    }
+
+    /// Renders the histogram as a formatted string.
+    fn render(&self, field: &str) -> String {
+        let mut output = String::new();
+        output.push_str(&format!(
+            "Histogram of {}: {} values\n",
+            field,
+            self.bins.iter().map(|b| b.2).sum::<usize>()
+        ));
+        output.push_str("Bin Range\t\tFrequency\n");
+        output.push_str(&"-".repeat(40));
+        output.push('\n');
+
+        for (start, end, count) in &self.bins {
+            let bar_length = if self.max_count > 0 {
+                ((*count as f64 / self.max_count as f64) * self.bar_width as f64).round() as usize
+            } else {
+                0
+            };
+            let bar = std::iter::repeat_n(self.bar_char, bar_length).collect::<String>();
+            let range_str = format!("[{:.2} - {:.2})", start, end);
+            output.push_str(&format!("{}\t{:>8}\t{}\n", range_str, count, bar));
+        }
+
+        output
+    }
+}
+
+fn plot_durations(data: &[f64]) -> String {
+    let hist = Histogram::new(data, 4, 20, '*');
+
+    hist.render("durations")
+}
+
+/// A simple text-based histogram for integer values, rendered as a string using ASCII bars.
+struct IntHistogram {
+    bins: Vec<(usize, usize, usize)>, // (start, end, count)
+    max_count: usize,
+    bar_width: usize,
+    bar_char: char,
+}
+
+impl IntHistogram {
+    fn new(values: &[usize], num_bins: usize, bar_width: usize, bar_char: char) -> Self {
+        assert!(
+            !values.is_empty(),
+            "Cannot create histogram from empty data"
+        );
+        assert!(num_bins > 0, "Number of bins must be greater than 0");
+
+        let min = *values.iter().min().unwrap();
+        let max = *values.iter().max().unwrap();
+
+        let bin_width = if max == min {
+            1
+        } else {
+            // Ensure bin_width is at least 1
+            ((max - min) as f64 / num_bins as f64).ceil() as usize
+        };
+
+        let mut bin_counts = vec![0usize; num_bins];
+        for &value in values {
+            if value < min || value > max {
+                continue;
+            }
+            let bin_idx = if bin_width > 0 {
+                ((value - min) / bin_width).min(num_bins - 1)
+            } else {
+                0
+            };
+            bin_counts[bin_idx] += 1;
+        }
+
+        let max_count = *bin_counts.iter().max().unwrap_or(&0);
+
+        let mut bins = Vec::new();
+        for (i, &count) in bin_counts.iter().enumerate() {
+            let start = min + (i * bin_width);
+            let end = start + bin_width;
+            bins.push((start, end, count));
+        }
+
+        Self {
+            bins,
+            max_count,
+            bar_width,
+            bar_char,
+        }
+    }
+
+    /// Renders the histogram as a formatted string.
+    fn render(&self, field: &str) -> String {
+        let mut output = String::new();
+        output.push_str(&format!(
+            "Histogram of {}: {} values\n",
+            field,
+            self.bins.iter().map(|b| b.2).sum::<usize>()
+        ));
+        output.push_str("Bin Range\t\tFrequency\n");
+        output.push_str(&"-".repeat(40));
+        output.push('\n');
+
+        for (start, end, count) in &self.bins {
+            let bar_length = if self.max_count > 0 {
+                ((*count as f64 / self.max_count as f64) * self.bar_width as f64).round() as usize
+            } else {
+                0
+            };
+            let bar = std::iter::repeat_n(self.bar_char, bar_length).collect::<String>();
+            let range_str = format!("[{} - {})", start, end);
+            output.push_str(&format!("{}\t{:>8}\t{}\n", range_str, count, bar));
+        }
+        output
+    }
+}
+
+fn plot_transcription_lengths(data: &[usize]) -> String {
+    let hist = IntHistogram::new(data, 4, 20, '*');
+    hist.render("transcription lengths")
 }
 
 fn extract_parquet_file(tmp_folder: &Path, folder: &Path, filename: &str) -> Vec<Audio> {
@@ -329,6 +511,12 @@ async fn view_file(
         )
     };
 
+    let durations: Vec<f64> = files.iter().map(|a| a.duration).collect();
+    let durations_plot = plot_durations(&durations);
+
+    let transcriptions: Vec<usize> = files.iter().map(|a| a.transcription.len()).collect();
+    let transcriptions_plot = plot_transcription_lengths(&transcriptions);
+
     let html = format!(
         r#"
 <!DOCTYPE html>
@@ -379,6 +567,12 @@ async fn view_file(
             </button>
         </div>
         <h1 class="text-2xl font-bold mb-4">{}</h1>
+        <details class="mb-4 bg-gray-50 dark:bg-gray-700 p-4 rounded">
+            <summary class="font-semibold cursor-pointer">Metadata details</summary>
+            <pre class="mt-2 text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap"><code>{}</code></pre>
+            <br>
+            <pre class="mt-2 text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap"><code>{}</code></pre>
+        </details>
         <table class="min-w-full bg-white dark:bg-gray-800 border-collapse">
             <thead>
                 <tr class="border-b-2 dark:border-gray-700">
@@ -406,7 +600,14 @@ async fn view_file(
 </body>
 </html>
 "#,
-        filename, filename, rows, pagination_html, page_size_selector, total_items
+        filename,
+        filename,
+        durations_plot,
+        transcriptions_plot,
+        rows,
+        pagination_html,
+        page_size_selector,
+        total_items
     );
 
     Html(html)
