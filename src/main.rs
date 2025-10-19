@@ -378,6 +378,9 @@ async fn list_files(State(state): State<AppState>) -> Html<String> {
             {}
         </ul>
     </div>
+    <footer class="text-center mt-4">
+        <a href="https://github.com/RustedBytes/data-viewer-audio" class="text-sm text-gray-500 dark:text-gray-400 hover:underline"><b>data-viewer-audio</b> on GitHub</a>
+    </footer>
 </body>
 </html>
 "#,
@@ -599,6 +602,9 @@ async fn view_file(
             <div class="text-center text-sm text-gray-500 dark:text-gray-400">
                 Total audio files: {}
             </div>
+            <footer class="text-center mt-4">
+                <a href="https://github.com/RustedBytes/data-viewer-audio" class="text-sm text-gray-500 dark:text-gray-400 hover:underline"><b>data-viewer-audio</b> on GitHub</a>
+            </footer>
         </div>
     </div>
 </body>
@@ -669,7 +675,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/audio/{filename}/{index}", get(serve_audio))
         .with_state(state);
 
-    println!("Listening on {}", args.bind);
+    println!("Listening on http://{}", args.bind);
 
     let listener = TcpListener::bind(&args.bind).await.unwrap();
     axum::serve(listener, app).await.unwrap();
