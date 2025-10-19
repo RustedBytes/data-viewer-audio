@@ -427,7 +427,7 @@ async fn view_file(
         rows.push_str(&format!(
             r#"
             <tr class="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer" onclick="var audio = this.querySelector('audio'); if (audio.paused) {{ audio.play(); }} else {{ audio.pause(); }}">
-                <td class="px-4 py-4"><audio controlslist="nodownload" preload="metadata" class="h-dvh max-h-[2.25rem] w-full min-w-[300px] max-w-xs" controls="" src="{}"></audio></td>
+                <td class="px-4 py-4"><audio class="h-dvh max-h-[2.25rem] w-full min-w-[300px] max-w-xs" controls="" src="{}"></audio></td>
                 <td class="px-4 py-4 text-right">{}</td>
                 <td class="px-4 py-4">{}</td>
             </tr>
