@@ -103,7 +103,11 @@ fn extract_parquet_file(tmp_folder: &Path, folder: &Path, filename: &str) -> Vec
         }
 
         let duration = col_d.get(i).unwrap().extract::<f64>().unwrap();
-        let transcription = col_t.get(i).unwrap().to_string();
+        let transcription = if let AnyValue::String(s) = col_t.get(i).unwrap() {
+            s.to_string()
+        } else {
+            col_t.get(i).unwrap().to_string()
+        };
 
         let audio = Audio {
             path,
@@ -225,10 +229,10 @@ async fn view_file(
         );
         rows.push_str(&format!(
             r#"
-            <tr class="border-b dark:border-gray-700">
-                <td class="px-4 py-2"><audio controls src="{}"></audio></td>
-                <td class="px-4 py-2">{}</td>
-                <td class="px-4 py-2">{}</td>
+            <tr class="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
+                <td class="px-4 py-4"><audio controlslist="nodownload" preload="metadata" class="h-dvh max-h-[2.25rem] w-full min-w-[300px] max-w-xs" controls="" src="{}"></audio></td>
+                <td class="px-4 py-4 text-right">{}</td>
+                <td class="px-4 py-4">{}</td>
             </tr>
             "#,
             audio_src, audio.duration, audio.transcription,
@@ -298,7 +302,7 @@ async fn view_file(
             <thead>
                 <tr class="border-b-2 dark:border-gray-700">
                     <th class="px-4 py-2 text-left">Audio</th>
-                    <th class="px-4 py-2 text-left">Duration</th>
+                    <th class="px-4 py-2 text-right">Duration</th>
                     <th class="px-4 py-2 text-left">Transcription</th>
                 </tr>
             </thead>
