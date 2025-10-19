@@ -121,6 +121,21 @@ fn extract_parquet_file(tmp_folder: &Path, folder: &Path, filename: &str) -> Vec
     created_files
 }
 
+/// Formats a duration in seconds into a human-readable string (MM:SS.ms or HH:MM:SS.ms).
+fn format_duration(seconds: f64) -> String {
+    let total_seconds = seconds.floor() as u64;
+    let hours = total_seconds / 3600;
+    let minutes = (total_seconds % 3600) / 60;
+    let secs = total_seconds % 60;
+    let millis = (seconds.fract() * 1000.0).round() as u64;
+
+    if hours > 0 {
+        format!("{:02}:{:02}:{:02}.{:03}", hours, minutes, secs, millis)
+    } else {
+        format!("{:02}:{:02}.{:03}", minutes, secs, millis)
+    }
+}
+
 /// Serves the list of Parquet files in the folder.
 async fn list_files(State(state): State<AppState>) -> Html<String> {
     let files: Vec<String> = fs::read_dir(&state.folder)
@@ -235,27 +250,83 @@ async fn view_file(
                 <td class="px-4 py-4">{}</td>
             </tr>
             "#,
-            audio_src, audio.duration, audio.transcription,
-        ));
-    }
-
-    let mut pagination_links = String::new();
-    for i in 1..=total_pages {
-        let class = if i == page {
-            "px-3 py-1 bg-blue-500 text-white rounded-md"
-        } else {
-            "px-3 py-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-blue-600 dark:text-blue-300 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-md"
-        };
-        pagination_links.push_str(&format!(
-            r#"<a href="/view/{}?page={}&page_size={}" class="{}">{}</a>"#,
-            filename, i, page_size, class, i
+            audio_src, format_duration(audio.duration), &audio.transcription,
         ));
     }
 
     let pagination_html = if total_pages > 1 {
+        let mut pagination_links = String::new();
+        let window = 2;
+        let mut pages_to_render = vec![];
+
+        // Previous page link
+        if page > 1 {
+            pagination_links.push_str(&format!(
+                r#"<a href="/view/{}?page={}&page_size={}" class="px-3 py-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-blue-600 dark:text-blue-300 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-md">Prev</a>"#,
+                filename, page - 1, page_size
+            ));
+        }
+
+        pages_to_render.push(1);
+        if page > window + 2 {
+            pages_to_render.push(0); // Ellipsis
+        }
+
+        for i in (page.saturating_sub(window))..=(page + window) {
+            if i > 1 && i < total_pages {
+                pages_to_render.push(i);
+            }
+        }
+
+        if page < total_pages.saturating_sub(window + 1) {
+            pages_to_render.push(0); // Ellipsis
+        }
+        if total_pages > 1 {
+            pages_to_render.push(total_pages);
+        }
+
+        pages_to_render.dedup();
+
+        for p in pages_to_render {
+            if p == 0 {
+                pagination_links.push_str(r#"<span class="px-3 py-1">...</span>"#);
+            } else {
+                let class = if p == page {
+                    "px-3 py-1 bg-blue-500 text-white rounded-md"
+                } else {
+                    "px-3 py-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-blue-600 dark:text-blue-300 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-md"
+                };
+                pagination_links.push_str(&format!(
+                    r#"<a href="/view/{}?page={}&page_size={}" class="{}">{}</a>"#,
+                    filename, p, page_size, class, p
+                ));
+            }
+        }
+
+        // Next page link
+        if page < total_pages {
+            pagination_links.push_str(&format!(r#"<a href="/view/{}?page={}&page_size={}" class="px-3 py-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-blue-600 dark:text-blue-300 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-md">Next</a>"#, filename, page + 1, page_size));
+        }
         pagination_links
     } else {
         String::new()
+    };
+
+    let page_size_selector = {
+        let sizes = [10, 25, 50, 100];
+        let mut options = String::new();
+        for &size in &sizes {
+            let selected = if size == page_size { "selected" } else { "" };
+            options.push_str(&format!(
+                r#"<option value="/view/{}?page=1&page_size={}" {}>{}</option>"#,
+                filename, size, selected, size
+            ));
+        }
+
+        format!(
+            r#"<div class="flex items-center gap-2"><span>Page size:</span><select onchange="location = this.value;" class="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-md p-1">{}</select></div>"#,
+            options
+        )
     };
 
     let html = format!(
@@ -320,14 +391,22 @@ async fn view_file(
                 {}
             </tbody>
         </table>
-        <div class="mt-4 flex flex-wrap justify-center gap-2">
-            {}
+        <div class="mt-4 flex flex-col items-center gap-4">
+            <div class="flex flex-wrap justify-center gap-2">
+                {}
+            </div>
+            <div class="flex flex-wrap justify-center gap-2">
+                {}
+            </div>
+            <div class="text-center text-sm text-gray-500 dark:text-gray-400">
+                Total audio files: {}
+            </div>
         </div>
     </div>
 </body>
 </html>
 "#,
-        filename, filename, rows, pagination_html
+        filename, filename, rows, pagination_html, page_size_selector, total_items
     );
 
     Html(html)
