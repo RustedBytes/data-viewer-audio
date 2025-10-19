@@ -288,6 +288,16 @@ async fn view_file(
             }}
         }}
     </script>
+    <script>
+        document.addEventListener('play', function(e) {{
+            var audios = document.getElementsByTagName('audio');
+            for (var i = 0, len = audios.length; i < len; i++) {{
+                if (audios[i] != e.target) {{
+                    audios[i].pause();
+                }}
+            }}
+        }}, true);
+    </script>
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 p-8 text-gray-900 dark:text-gray-100">
     <div class="max-w-6xl mx-auto bg-white dark:bg-gray-800 shadow-md rounded-lg p-6 relative">
