@@ -429,17 +429,19 @@ async fn view_file(
         );
         rows.push_str(&format!(
             r#"
-            <tr class="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer" onclick="var audio = this.querySelector('audio'); if (audio.paused) {{ audio.play(); }} else {{ audio.pause(); }}">
-                <td class="px-4 py-4"><audio class="h-dvh max-h-[2.25rem] w-full min-w-[300px] max-w-xs" controls="" preload="none">
+            <tr class="block md:table-row border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer" onclick="var audio = this.querySelector('audio'); if (audio.paused) {{ audio.play(); }} else {{ audio.pause(); }}">
+                <td class="block md:table-cell px-4 py-2 md:py-4"><span class="md:hidden font-bold">Audio: </span><audio class="h-dvh max-h-[2.25rem] w-full min-w-[300px] max-w-xs inline-block" controls="" preload="none">
                     <source src="{}" type="audio/wav">
                         Your browser does not support the audio element.
                     </audio>
                 </td>
-                <td class="px-4 py-4 text-right">{}</td>
-                <td class="px-4 py-4">{}</td>
+                <td class="block md:table-cell px-4 py-2 md:py-4 md:text-right"><span class="md:hidden font-bold">Duration: </span>{}</td>
+                <td class="block md:table-cell px-4 py-2 md:py-4"><span class="md:hidden font-bold">Transcription: </span>{}</td>
             </tr>
             "#,
-            audio_src, format_duration(audio.duration), &audio.transcription,
+            audio_src,
+            format_duration(audio.duration),
+            &audio.transcription,
         ));
     }
 
@@ -580,12 +582,12 @@ async fn view_file(
             <br>
             <pre class="mt-2 text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap"><code>{}</code></pre>
         </details>
-        <table class="min-w-full bg-white dark:bg-gray-800 border-collapse">
-            <thead>
+        <table class="w-full bg-white dark:bg-gray-800 border-collapse">
+            <thead class="hidden md:table-header-group">
                 <tr class="border-b-2 dark:border-gray-700">
-                    <th class="px-4 py-2 text-left">Audio</th>
-                    <th class="px-4 py-2 text-right">Duration</th>
-                    <th class="px-4 py-2 text-left">Transcription</th>
+                    <th class="px-4 py-2 text-left font-semibold">Audio</th>
+                    <th class="px-4 py-2 text-right font-semibold">Duration</th>
+                    <th class="px-4 py-2 text-left font-semibold">Transcription</th>
                 </tr>
             </thead>
             <tbody>
