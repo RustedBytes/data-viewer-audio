@@ -582,7 +582,8 @@ async fn view_file(
             <br>
             <pre class="mt-2 text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap"><code>{}</code></pre>
         </details>
-        <table class="w-full bg-white dark:bg-gray-800 border-collapse">
+        <div class="overflow-x-auto">
+            <table class="min-w-full w-full bg-white dark:bg-gray-800 border-collapse">
             <thead class="hidden md:table-header-group">
                 <tr class="border-b-2 dark:border-gray-700">
                     <th class="px-4 py-2 text-left font-semibold">Audio</th>
@@ -593,7 +594,8 @@ async fn view_file(
             <tbody>
                 {}
             </tbody>
-        </table>
+            </table>
+        </div>
         <div class="mt-4 flex flex-col items-center gap-4">
             <div class="flex flex-wrap justify-center gap-2">
                 {}
