@@ -606,11 +606,11 @@ async fn view_file(
             <div class="text-center text-sm text-gray-500 dark:text-gray-400">
                 Total audio files: {}
             </div>
-            <footer class="text-center mt-4">
-                <a href="https://github.com/RustedBytes/data-viewer-audio" class="text-sm text-gray-500 dark:text-gray-400 hover:underline"><b>data-viewer-audio</b> on GitHub</a>
-            </footer>
         </div>
     </div>
+    <footer class="text-center mt-4">
+        <a href="https://github.com/RustedBytes/data-viewer-audio" class="text-sm text-gray-500 dark:text-gray-400 hover:underline"><b>data-viewer-audio</b> on GitHub</a>
+    </footer>
 </body>
 </html>
 "#,
