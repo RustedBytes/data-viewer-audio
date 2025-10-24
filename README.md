@@ -59,7 +59,6 @@ The server will start at `http://localhost:3000`. Open it in your browser to sta
 Example CLI output on startup:
 ```
 Server listening on http://0.0.0.0:3000
-Loaded 1926 audio files from audio.parquet
 ```
 
 ## Dependencies
