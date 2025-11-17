@@ -5,7 +5,7 @@ edition = "2024"
 
 [dependencies]
 anyhow = "1.0.100"
-axum = "0.8.6"
+axum = "0.8.7"
 clap = { version = "4.5.50", features = ["derive"] }
 polars = { version = "0.51.0", features = ["parquet", "dtype-struct"] }
 serde = { version = "1.0.228", features = ["derive"] }
