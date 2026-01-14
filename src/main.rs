@@ -58,7 +58,7 @@ fn extract_parquet(path: &Path) -> PolarsResult<DataFrame> {
     reader_pq
         .finish()?
         // Unnest the 'audio' struct column. This creates new columns.
-        .unnest(["audio"])
+        .unnest(["audio"], None)
         .map(|mut df| {
             df.rename("bytes", "audio_bytes".into()).unwrap();
             df
