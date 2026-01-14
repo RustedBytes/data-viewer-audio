@@ -84,8 +84,6 @@ See [Cargo.toml](Cargo.toml) for full details.
 - **Linting**: `cargo clippy` for warnings.
 - **Building Docs**: `cargo doc --open` for Rustdoc.
 
-Contributions welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) (create if needed) for guidelines. Fork from [RustedBytes/data-viewer-audio](https://github.com/RustedBytes/data-viewer-audio).
-
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
