@@ -7,7 +7,7 @@ edition = "2024"
 anyhow = "1.0.100"
 axum = "0.8.8"
 clap = { version = "4.5.54", features = ["derive"] }
-polars = { version = "0.52.0", features = ["parquet", "dtype-struct"] }
+polars = { version = "0.53.0", features = ["parquet", "dtype-struct"] }
 serde = { version = "1.0.228", features = ["derive"] }
 tokio = { version = "1.49.0", features = ["full"] }
 tokio-util = { version = "0.7.18", features = ["full"] }
